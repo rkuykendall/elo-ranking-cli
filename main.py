@@ -1,10 +1,6 @@
-from elo import Rating, rate_1vs1
 import random
-
-# alice, bob = Rating(1000), Rating(1400)
-# print alice, bob
-# bob, alice = rate_1vs1(bob, alice)
-# print alice, bob
+import operator
+from elo import Rating, rate_1vs1
 
 
 def main():
@@ -17,9 +13,9 @@ def main():
         if winner in (one, two):
             loser = one if two == winner else two
             rankings.choices.append(Choice(winner, loser))
-        elif 'rank' in winner:
+        elif winner.lower() in ('show', 'rank', 'r'):
             rankings.show()
-        elif 'quit' in winner:
+        elif winner.lower() in ('exit', 'quit', 'q', 'x'):
             break
         else:
             print "WAT?"
@@ -39,7 +35,8 @@ class Choice():
 class Ranking():
     choices = []
     options = {}
-    filename = "choices.txt"
+    choices_file = "choices.txt"
+    options_file = "options.txt"
 
     def __init__(self):
         defaults = [
@@ -48,20 +45,24 @@ class Ranking():
             'three'
         ]
 
+        with open(self.options_file) as f:
+            lines = f.readlines()
+        defaults = [d.strip() for d in lines]
+
         for option in defaults:
             self.options[option] = Rating(1000)
 
         self.load_choices()
 
     def save_choices(self):
-        target = open(self.filename, 'w')
+        target = open(self.choices_file, 'w')
         target.truncate()
 
         for choice in self.choices:
             target.write("{},{}\n".format(choice.winner, choice.loser))
 
     def load_choices(self):
-        with open(self.filename) as f:
+        with open(self.choices_file) as f:
             lines = f.readlines()
 
         for line in lines:
@@ -69,7 +70,6 @@ class Ranking():
             self.choices.append(Choice(winner, loser))
 
     def show(self):
-        print self.choices
         for choice in self.choices:
             winner = self.options[choice.winner]
             loser = self.options[choice.loser]
@@ -77,8 +77,14 @@ class Ranking():
             self.options[choice.winner] = winner
             self.options[choice.loser] = loser
 
-        for option, score in self.options.iteritems():
-            print "{}: {}".format(option, score)
+        sorted_options = sorted(
+            self.options.items(), key=operator.itemgetter(1))
+        sorted_options.reverse()
+
+        rank = 1
+        for option, score in sorted_options:
+            print "{}. {} ({})".format(rank, option, score)
+            rank += 1
 
 
 if __name__ == "__main__":
