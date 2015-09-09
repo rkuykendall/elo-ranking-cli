@@ -4,21 +4,35 @@ from elo import Rating, rate_1vs1
 
 
 def main():
-    rankings = Ranking()
+    try:
+        rankings = Ranking()
+    except IOError:
+        print "No options.txt file found! Please fill one option per line."
+        exit()
 
-    while True:
-        one, two = random.sample(rankings.options.keys(), 2)
-        winner = raw_input("\n\nCompare {} vs {}: ".format(one, two))
+    print (
+        "Welcome to the ranking CLI!\n"
+        "Make choices, then thype 'show' for rankings, "
+        "and 'quit' to save and exit.\n")
 
-        if winner in (one, two):
-            loser = one if two == winner else two
-            rankings.choices.append(Choice(winner, loser))
-        elif winner.lower() in ('show', 'rank', 'r'):
-            rankings.show()
-        elif winner.lower() in ('exit', 'quit', 'q', 'x'):
-            break
-        else:
-            print "WAT?"
+    try:
+        while True:
+            one, two = random.sample(rankings.options.keys(), 2)
+            winner = raw_input("Compare '{}' vs '{}': ".format(one, two))
+
+            if winner in (one, two):
+                loser = one if two == winner else two
+                rankings.choices.append(Choice(winner, loser))
+            elif winner.lower() in ('show', 'rank', 'r'):
+                rankings.show()
+            elif winner.lower() in ('exit', 'quit', 'q', 'x'):
+                break
+            else:
+                print "WAT?"
+    except KeyboardInterrupt:
+        print '\n'
+        rankings.show()
+        pass
 
     rankings.save_choices()
 
@@ -37,14 +51,9 @@ class Ranking():
     options = {}
     choices_file = "choices.txt"
     options_file = "options.txt"
+    split_file_on = '|'
 
     def __init__(self):
-        defaults = [
-            'one',
-            'two',
-            'three'
-        ]
-
         with open(self.options_file) as f:
             lines = f.readlines()
         defaults = [d.strip() for d in lines]
@@ -59,15 +68,19 @@ class Ranking():
         target.truncate()
 
         for choice in self.choices:
-            target.write("{},{}\n".format(choice.winner, choice.loser))
+            target.write("{}{}{}\n".format(
+                choice.winner, self.split_file_on, choice.loser))
 
     def load_choices(self):
-        with open(self.choices_file) as f:
-            lines = f.readlines()
+        try:
+            with open(self.choices_file) as f:
+                lines = f.readlines()
 
-        for line in lines:
-            winner, loser = line.strip().split(',')
-            self.choices.append(Choice(winner, loser))
+            for line in lines:
+                winner, loser = line.strip().split(self.split_file_on)
+                self.choices.append(Choice(winner, loser))
+        except IOError:
+            print "No choices loaded from choices.txt"
 
     def show(self):
         for choice in self.choices:
@@ -81,10 +94,12 @@ class Ranking():
             self.options.items(), key=operator.itemgetter(1))
         sorted_options.reverse()
 
+        print '\nRankings:'
         rank = 1
         for option, score in sorted_options:
-            print "{}. {} ({})".format(rank, option, score)
+            print "{}. {} (~{})".format(rank, option, int(score))
             rank += 1
+        print ''
 
 
 if __name__ == "__main__":
