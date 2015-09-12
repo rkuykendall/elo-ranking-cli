@@ -23,6 +23,11 @@ def main():
             if winner in (one, two):
                 loser = one if two == winner else two
                 rankings.choices.append(Choice(winner, loser))
+            elif winner.lower() in ('1', '2'):
+                choice = int(winner) - 1
+                winner = (one, two)[choice]
+                loser = (one, two)[(choice + 1) % 2]
+                rankings.choices.append(Choice(winner, loser))
             elif winner.lower() in ('show', 'rank', 'r'):
                 rankings.show()
             elif winner.lower() in ('exit', 'quit', 'q', 'x'):
